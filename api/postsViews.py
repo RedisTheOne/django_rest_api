@@ -7,8 +7,6 @@ from api.helpers import get_username_from_jwt
 from django.utils import timezone
 from rest_framework.views import APIView
 
-# Create your views here.
-
 
 class Posts(APIView):
     def get(self, request, format=None):

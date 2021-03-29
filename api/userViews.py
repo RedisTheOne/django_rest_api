@@ -4,11 +4,17 @@ from rest_framework.parsers import JSONParser
 from api.serializers import UserSerializer, FilteredUserSerializer, UserSignInSerializer
 from api.models import User
 from api.helpers import get_username_from_jwt, encode_username
-
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.openapi import IN_BODY, Parameter, TYPE_STRING
 # Create your views here.
+
+token_param_config = Parameter(
+    'username', in_=IN_BODY, description='Username', type=TYPE_STRING
+)
 
 
 @api_view(['POST'])
+@swagger_auto_schema(manual_parameters=[token_param_config])
 def sign_up(request):
     data = JSONParser().parse(request)
     serializer = UserSerializer(data=data)
@@ -52,4 +58,4 @@ def get_user_information(request):
         except User.DoesNotExist:
             return JsonResponse({'msg': 'User was not found'}, status=404)
     else:
-        return JsonResponse({'msg': username_data['error_msg']}, status=400)
+        return JsonResponse({'msg': username_data['error_msg']}, status=401)
