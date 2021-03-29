@@ -50,3 +50,15 @@ def objects_with_cache(key, cache_time, Model, pk=None):
 
     cache.set(key, objects, cache_time)
     return objects
+
+
+def posts_filtered_by_title_with_cache(key, cache_time, Model, q):
+    cache_values = cache.get(key)
+
+    if cache_values is not None:
+        return cache_values
+
+    objects = Model.objects.filter(title__contains=q)
+
+    cache.set(key, objects, cache_time)
+    return objects

@@ -3,10 +3,12 @@ from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
 from api.models import Post, User
 from api.serializers import PostSerializer
-from api.helpers import get_username_from_jwt, get_pagination_props, objects_with_cache
+from api.helpers import get_username_from_jwt, get_pagination_props, objects_with_cache, posts_filtered_by_title_with_cache
 from django.utils import timezone
 from rest_framework.views import APIView
 from django.core.paginator import Paginator, EmptyPage
+from django.utils.datastructures import MultiValueDictKeyError
+from rest_framework.decorators import api_view
 
 
 class Posts(APIView):
@@ -76,3 +78,16 @@ class PostDetail(APIView):
             return JsonResponse({'msg': 'Post was not found'}, status=404)
         post.delete()
         return JsonResponse({'msg': 'Post deleted successfully'}, status=204)
+
+
+@api_view(['GET'])
+def search_posts(request):
+    try:
+        query = request.GET['q']
+    except MultiValueDictKeyError as e:
+        return JsonResponse({'msg': 'q is required'}, status=400)
+
+    posts = posts_filtered_by_title_with_cache(
+        f"post-query-{query}", 10, Post, query)
+    serializer = PostSerializer(posts, many=True)
+    return JsonResponse(data=serializer.data, safe=False)
