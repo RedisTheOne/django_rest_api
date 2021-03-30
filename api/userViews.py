@@ -53,7 +53,7 @@ def get_user_information(request):
             posts = Post.objects.filter(user=user)
             posts_serializer = PostSerializer(posts, many=True)
             user_serializer = FilteredUserSerializer(user)
-            return JsonResponse({'user': user_serializer.data, 'posts': posts_serializer.data})
+            return JsonResponse({**user_serializer.data, **{'posts': posts_serializer.data}})
         except User.DoesNotExist:
             return JsonResponse({'msg': 'User was not found'}, status=404)
 

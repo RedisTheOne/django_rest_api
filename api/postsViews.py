@@ -13,9 +13,7 @@ from rest_framework.decorators import api_view
 
 class Posts(APIView):
     def get(self, request, format=None):
-        posts = objects_with_cache(
-            f"posts", 10, Post
-        )
+        posts = objects_with_cache('posts', 10, Post)
         page, posts_per_page = get_pagination_props(request)
         p = Paginator(posts, posts_per_page)
 
@@ -84,7 +82,7 @@ class PostDetail(APIView):
 def search_posts(request):
     try:
         query = request.GET['q']
-    except MultiValueDictKeyError as e:
+    except MultiValueDictKeyError:
         return JsonResponse({'msg': 'q is required'}, status=400)
 
     posts = posts_filtered_by_title_with_cache(
