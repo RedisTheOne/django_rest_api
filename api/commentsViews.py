@@ -9,8 +9,8 @@ from django.core.paginator import Paginator, EmptyPage
 
 class Comments(APIView):
     def get(self, request, post_id, format=None):
-        comments = objects_with_cache(
-            f"comments-with-post-id-{post_id}", 10, Comment, post_id)
+        comments = Comment.objects.filter(
+            post_id=post_id).order_by('-created_at')
         page, comments_per_page = get_pagination_props(request)
         p = Paginator(comments, comments_per_page)
 
@@ -35,7 +35,8 @@ class Comments(APIView):
                     return JsonResponse({'msg': 'Post was not found'}, status=404)
 
                 comment = Comment(text=serializer.data['text'],
-                                  post=post)
+                                  post=post,
+                                  username=username_data['username'])
                 comment.save()
                 return JsonResponse(serializer.data, status=201)
             return JsonResponse(serializer.errors, status=400)

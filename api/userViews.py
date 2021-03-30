@@ -1,8 +1,8 @@
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
-from api.serializers import UserSerializer, FilteredUserSerializer, UserSignInSerializer
-from api.models import User
+from api.serializers import UserSerializer, FilteredUserSerializer, UserSignInSerializer, PostSerializer
+from api.models import User, Post
 from api.helpers import get_username_from_jwt, encode_username
 
 
@@ -50,8 +50,10 @@ def get_user_information(request):
         try:
             user = User.objects.get(
                 username=username_data['username'])
-            serializer = FilteredUserSerializer(user)
-            return JsonResponse(serializer.data)
+            posts = Post.objects.filter(user=user)
+            posts_serializer = PostSerializer(posts, many=True)
+            user_serializer = FilteredUserSerializer(user)
+            return JsonResponse({'user': user_serializer.data, 'posts': posts_serializer.data})
         except User.DoesNotExist:
             return JsonResponse({'msg': 'User was not found'}, status=404)
 

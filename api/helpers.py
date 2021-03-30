@@ -44,9 +44,9 @@ def objects_with_cache(key, cache_time, Model, pk=None):
         return cache_values
 
     if pk is not None:
-        objects = Model.objects.filter(pk=pk)
+        objects = Model.objects.filter(pk=pk).order_by('-created_at')
     else:
-        objects = Model.objects.all()
+        objects = Model.objects.all().order_by('-created_at')
 
     cache.set(key, objects, cache_time)
     return objects
