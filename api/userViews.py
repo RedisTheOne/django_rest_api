@@ -1,48 +1,43 @@
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
-from rest_framework.parsers import JSONParser
-from api.serializers import UserSerializer, FilteredUserSerializer, UserSignInSerializer, PostSerializer
+from django.views.decorators.http import require_http_methods
 from api.models import User, Post
-from api.helpers import get_username_from_jwt, encode_username
+from api.helpers import get_username_from_jwt, encode_username, parse_body_from_request
+from api.serializers import Serializer, PostsSerializer
+import json
 
 
-@api_view(['POST'])
+@require_http_methods(['POST'])
 def sign_up(request):
-    data = JSONParser().parse(request)
-    serializer = UserSerializer(data=data)
-
-    if serializer.is_valid():
-        username = data['username']
-        try:
-            user = User.objects.get(username=username)
-            return JsonResponse({'msg': f"User {username} already exists "}, status=400)
-        except User.DoesNotExist:
-            serializer.save()
-            encoded_jwt = encode_username(username)
-            return JsonResponse({'jwt': encoded_jwt}, status=201)
-
-    return JsonResponse(serializer.errors, status=400)
-
-
-@api_view(['POST'])
-def sign_in(request):
-    data = JSONParser().parse(request)
-    serializer = UserSignInSerializer(data=data)
-
-    if serializer.is_valid():
+    data = parse_body_from_request(request)
+    try:
         username = data['username']
         password = data['password']
-        try:
-            User.objects.get(username=username, password=password)
-            encoded_jwt = encode_username(username)
-            return JsonResponse({'jwt': encoded_jwt}, status=200)
-        except User.DoesNotExist:
-            return JsonResponse({'msg': 'User was not found'}, status=404)
+        email = data['email']
+        user = User.objects.get(username=username)
+        return JsonResponse({'msg': f"User {username} already exists "}, status=400)
+    except User.DoesNotExist:
+        User(username=username, password=password, email=email).save()
+        encoded_jwt = encode_username(username)
+        return JsonResponse({'jwt': encoded_jwt}, status=201)
+    except KeyError:
+        return JsonResponse({'msg': 'Please fill required fields'}, status=400)
 
-    return JsonResponse(serializer.errors, status=400)
+
+@require_http_methods(['POST'])
+def sign_in(request):
+    data = parse_body_from_request(request)
+    try:
+        user = User.objects.get(
+            username=data['username'], password=data['password'])
+        encoded_jwt = encode_username(data['username'])
+        return JsonResponse({'jwt': encoded_jwt}, status=200)
+    except KeyError:
+        return JsonResponse({'msg': 'Please fill required fields'}, status=400)
+    except User.DoesNotExist:
+        return JsonResponse({'msg': 'User was not found'}, status=404)
 
 
-@api_view(['GET'])
+@require_http_methods(['GET'])
 def get_user_information(request):
     username_data = get_username_from_jwt(request)
 
@@ -51,9 +46,13 @@ def get_user_information(request):
             user = User.objects.get(
                 username=username_data['username'])
             posts = Post.objects.filter(user=user)
-            posts_serializer = PostSerializer(posts, many=True)
-            user_serializer = FilteredUserSerializer(user)
-            return JsonResponse({**user_serializer.data, **{'posts': posts_serializer.data}})
+            posts_serializer = PostsSerializer(
+                ['id', 'title', 'description', 'created_at'])
+            posts_serialized = posts_serializer.getSerializedItems(posts)
+            user_serializer = Serializer(
+                ['id', 'username', 'email', 'password'])
+            user_serialized = user_serializer.getSerializedItem(user)
+            return JsonResponse({**user_serialized, ** {'posts': posts_serialized}})
         except User.DoesNotExist:
             return JsonResponse({'msg': 'User was not found'}, status=404)
 

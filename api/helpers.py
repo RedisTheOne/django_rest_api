@@ -2,6 +2,7 @@ import jwt
 from api.secret import jwt_key
 from django.utils.datastructures import MultiValueDictKeyError
 from django.core.cache import cache
+from json import loads
 
 
 def get_username_from_jwt(request):
@@ -16,6 +17,11 @@ def get_username_from_jwt(request):
 
     except KeyError:
         return {'username': False, 'error_msg': 'Auth is required'}
+
+
+def parse_body_from_request(request):
+    body = request.body.decode('utf-8')
+    return loads(body)
 
 
 def encode_username(username):

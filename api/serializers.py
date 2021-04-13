@@ -35,3 +35,40 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ['id', 'text', 'postId', 'username']
+
+
+class Serializer:
+    def __init__(self, fields):
+        self.fields = fields
+
+    def getSerializedItems(self, items):
+        items_serialized = []
+        for p in items:
+            item_dict = {}
+            for f in self.fields:
+                item_dict[f] = getattr(p, f)
+            items_serialized.append(item_dict)
+        return items_serialized
+
+    def getSerializedItem(self, item):
+        item_dict = {}
+        for f in self.fields:
+            item_dict[f] = getattr(item, f)
+        return item_dict
+
+
+class PostsSerializer(Serializer):
+    def getSerializedItems(self, items):
+        items_serialized = []
+        for p in items:
+            item_dict = {}
+            for f in self.fields:
+                item_dict[f] = getattr(p, f)
+            item_dict['username'] = p.user.username
+            items_serialized.append(item_dict)
+        return items_serialized
+
+    def getSerializedItem(self, item):
+        item_dict = super().getSerializedItem(item)
+        item_dict['username'] = item.user.username
+        return item_dict
